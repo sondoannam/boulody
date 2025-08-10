@@ -1,0 +1,30 @@
+{
+  "name": "boulody-electron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:renderer": "cd packages/renderer && npx vite",
+    "dev:main": "cd packages/main && npx tsc --watch",
+    "dev:electron": "npx wait-on http://localhost:5173 && npx cross-env NODE_ENV=development npx electron ./packages/main/dist/index.js",
+    "dev": "npx concurrently -k \"pnpm:dev:*\"",
+    "build:renderer": "cd packages/renderer && pnpm run build",
+    "build:main": "cd packages/main && npx tsc",
+    "build": "pnpm run build:main && pnpm run build:renderer",
+    "start": "npx cross-env NODE_ENV=production npx electron ./packages/main/dist/index.js",
+    "package": "npx tsx scripts/package.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "tsx": "^4.20.3",
+    "typescript": "~5.8.3",
+    "wait-on": "^8.0.4"
+  }
+}
