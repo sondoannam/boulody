@@ -1,0 +1,45 @@
+Step 02 - Preload & Renderer Subscription API Recap
+====================================================
+Goal: Safely expose the fake audio engine frame stream + control commands to the renderer without enabling full Node integration.Key Additions:
+1. preload.ts (contextIsolation-safe bridge)
+   - Uses contextBridge.exposeInMainWorld('audioFrames', api)
+   - Provides: onFrame, onStatus, onMetrics, start, stop, updateConfig
+   - Each onX method returns a handle with off() for cleanup to prevent leaks.
+
+2. BrowserWindow webPreferences updated:
+   - contextIsolation: true (security best practice)
+   - nodeIntegration: false (limits attack surface)
+   - preload points to built preload.js output.
+
+3. Channel Filtering Strategy:
+   - Single channel per message category (audio:frame, audio:status, audio:metrics).
+   - onFrame() attaches listener filtered by payload.type === 'frame'.
+   - Keeps API future-proof if we multiplex additional message forms later.
+
+4. Control Flow:
+   Renderer -> Main: ipcRenderer.send(AudioChannels.control, { type: 'start' | 'stop' | 'update-config', ... })
+   Main -> Renderer: webContents.send(AudioChannels.frame/status/metrics, message)
+
+5. Type Trade-offs:
+   - For now, preload uses loose 'any' in control methods to avoid duplicating type definitions in renderer prematurely.
+   - Plan: introduce a shared types package (e.g., packages/shared/) later to unify main + renderer.
+
+6. Memory & Safety:
+   - Frame data currently copied (frequencies.slice(0)) in engine before send; renderer can mutate safely.
+   - Future optimization: switch to Transferable or SharedArrayBuffer if profiling shows overhead.
+
+7. Dev Ergonomics:
+   - Renderer can start immediately by calling window.audioFrames.start() (or rely on auto-start in main).
+   - Multiple listeners supported; each must call off() during cleanup (e.g., React useEffect return).
+
+Next Possible Steps:
+   A) Implement renderer hook (useAudioFrames) for React.
+   B) Add metrics interval broadcasting (e.g., every 2s).
+   C) Move shared types to a new package.
+   D) Add config UI panel to tweak fps/bins/smoothing live.
+
+Security Note:
+   Exposed surface limited to explicit API; no eval, no direct ipcRenderer access. Good baseline posture.
+
+End of Step 02 Recap.
+

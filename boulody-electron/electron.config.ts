@@ -8,10 +8,7 @@ const config: Configuration = {
     output: 'dist',
     buildResources: 'assets',
   },
-  files: [
-    'packages/main/dist/**/*',
-    'packages/renderer/dist/**/*',
-  ],
+  files: ['packages/main/dist/**/*', 'packages/renderer/dist/**/*'],
   mac: {
     category: 'public.app-category.music',
     target: ['dmg'],

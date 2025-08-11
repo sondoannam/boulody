@@ -12,7 +12,8 @@
     "build:main": "cd packages/main && npx tsc",
     "build": "pnpm run build:main && pnpm run build:renderer",
     "start": "npx cross-env NODE_ENV=production npx electron ./packages/main/dist/index.js",
-    "package": "npx tsx scripts/package.ts"
+    "package": "npx tsx scripts/package.ts",
+    "format": "npx prettier --write ."
   },
   "keywords": [],
   "author": "",

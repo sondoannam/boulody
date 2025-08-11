@@ -1,0 +1,52 @@
+Step 03 - Shared Types Package + React Hook (useAudioFrames) Recap
+=================================================================
+Goal: Unify audio-related TypeScript contracts between main & renderer and provide ergonomic consumption API for UI layer.
+
+Key Deliverables:
+1. Created packages/shared
+   - Exports unified audio types & channel constants (audio.ts + index.ts)
+   - Built with its own tsconfig to produce declaration files for IDE support.
+
+2. Refactored main process types
+   - Replaced local definitions in packages/main/src/audio/types.ts with re-exports from @boulody/shared
+   - Updated preload.ts to import from @boulody/shared
+
+3. Added @boulody/shared dependency to main & renderer via pnpm workspace linking.
+
+4. Implemented React hook useAudioFrames
+   - Subscribes to frame, status, metrics IPC channels through preload API
+   - Maintains latest frame in React state
+   - Provides start/stop/updateConfig + a requestAnimationFrame helper for smooth custom animations
+   - Returns a convenience volume field and direct status/metrics references
+
+5. Updated App.tsx
+   - Displays running status, volume, and first 64 spectrum bins as simple bars
+   - Demonstrates live config mutation via Randomize Smoothing button
+
+Design Choices & Rationale:
+- Shared Package: Prevents divergence and copy/paste drift; enables future publishing if extracted.
+- Uint8Array in shared contract: Keeps payload small & ready for immediate visualization w/out extra mapping.
+- Frame Copy: For now frequencies are copied before send (safer). Later optimization path: transferable or SharedArrayBuffer for zero-copy.
+- Hook Structure: Separates IPC rate (≈60 fps) from visual rendering cadence. UI can animate at monitor refresh even if frames drop.
+- useAnimationFrame helper: Offers an imperative subscription so heavy canvas/WebGL drawing can avoid causing React re-renders.
+- Config Mutation: Hook exposes updateConfig to enable side panels / dev controls.
+
+Future Enhancements:
+- Add metrics periodic broadcast (engine side) & surface in hook.
+- Introduce peak hold data (peaks Uint8Array) for advanced visual styles.
+- Add error boundary / connection health detection (e.g., timeout if no frames for N ms).
+- Move hook to its own small internal lib for reuse across multiple renderer windows.
+- Provide a selector API to minimize re-renders (e.g., useAudioValue(selector)).
+
+Testing Strategy Suggestions:
+- Add a debug component that logs frame interval jitter (compare timestamp deltas > 20ms threshold).
+- Benchmark large bin counts (e.g., 1024) to measure React render cost vs rAF custom draw.
+- Simulate latency via updateConfig({ simulateLatencyMs: 100 }) and observe effect in UI.
+
+Next Step Candidates:
+A) Metrics timer + overlay component.
+B) Config panel with controlled inputs (fps, bins, smoothing, latency).
+C) Add peak hold + decay visualization variant.
+D) Introduce canvas-based renderer for performance comparison.
+
+End of Step 03 Recap.
