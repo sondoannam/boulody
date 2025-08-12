@@ -1,10 +1,34 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import { FakeAudioEngine } from './audio/engine';
 import path from 'path';
 import fs from 'fs';
 
 let mainWindow: BrowserWindow | undefined;
 let audioEngine: FakeAudioEngine | undefined;
+
+const setupPermissionHandler = () => {
+  try {
+    const ses = session.defaultSession;
+    // Electron < 28 uses setPermissionRequestHandler; newer may use different signature but keep generic.
+    if (ses && (ses as any).setPermissionRequestHandler) {
+      (ses as any).setPermissionRequestHandler(
+        (wc: Electron.WebContents, permission: string, callback: (allow: boolean) => void) => {
+          console.log('[main] permission request:', permission);
+          if (permission === 'media' || permission === 'microphone' || permission === 'camera') {
+            callback(true);
+          } else {
+            callback(true); // allow all for now (tighten later)
+          }
+        },
+      );
+      console.log('[main] media permission handler installed');
+    } else {
+      console.warn('[main] no setPermissionRequestHandler API available');
+    }
+  } catch (err) {
+    console.error('[main] failed to setup permission handler', err);
+  }
+};
 
 const createWindow = () => {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -48,7 +72,10 @@ const createWindow = () => {
   });
 };
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  setupPermissionHandler();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
