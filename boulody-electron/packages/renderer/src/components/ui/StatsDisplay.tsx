@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AudioSource, DisplayStats } from '../../types';
+import type { AudioSource } from '../../types';
 import type { AudioEngineStatus } from '@boulody/shared';
 
 interface StatsDisplayProps {

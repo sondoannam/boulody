@@ -1,10 +1,18 @@
 import React from 'react';
 import type { VisualizerType } from '../../types';
+import { SelectMenu } from './SelectMenu';
 
 interface VisualizerSelectorProps {
   visualizerType: VisualizerType;
   setVisualizerType: (type: VisualizerType) => void;
 }
+
+const visualizerOptions = [
+  { value: 'bars', label: 'Bars', icon: '📊' },
+  { value: 'wave', label: 'Wave', icon: '🌊' },
+  { value: 'circle', label: 'Circle', icon: '⭕' },
+  { value: 'debug', label: 'Debug', icon: '🔧' },
+];
 
 export const VisualizerSelector: React.FC<VisualizerSelectorProps> = ({ 
   visualizerType, 
@@ -12,15 +20,11 @@ export const VisualizerSelector: React.FC<VisualizerSelectorProps> = ({
 }) => (
   <div className="flex items-center gap-3">
     <span className="text-sm font-medium text-gray-300">Visualizer:</span>
-    <select
+    <SelectMenu
       value={visualizerType}
-      onChange={(e) => setVisualizerType(e.target.value as VisualizerType)}
-      className="px-3 py-2 bg-gray-700 text-white rounded-md border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
-    >
-      <option value="bars">📊 Bars</option>
-      <option value="wave">🌊 Wave</option>
-      <option value="circle">⭕ Circle</option>
-      <option value="debug">🔧 Debug</option>
-    </select>
+      onChange={(value) => setVisualizerType(value as VisualizerType)}
+      options={visualizerOptions}
+      placeholder="Select visualizer"
+    />
   </div>
 );

@@ -6,12 +6,13 @@ import type {
   DisplayStats, 
   VisualizerType 
 } from '../types';
-import type { AudioEngineConfig } from '@boulody/shared';
+// AudioEngineConfig is used in the audioControls.updateConfig call
 import { BarsVisualizer } from './visualizers/BarsVisualizer';
 import { WaveVisualizer } from './visualizers/WaveVisualizer';
 import { CircleVisualizer } from './visualizers/CircleVisualizer';
 import { DebugVisualizer } from './visualizers/DebugVisualizer';
 import { StatsDisplay } from './ui/StatsDisplay';
+import { SelectMenu } from './ui/SelectMenu';
 
 interface DemoViewProps {
   audioState: AudioState;
@@ -127,27 +128,29 @@ export const DemoView: React.FC<DemoViewProps> = ({
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-300">Visualizer:</label>
-            <select
+            <SelectMenu
               value={mode}
-              onChange={(e) => setMode(e.target.value as VisualizerType)}
-              className="px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-            >
-              <option value="bars">📊 Bars</option>
-              <option value="wave">🌊 Wave</option>
-              <option value="circle">⭕ Circle</option>
-              <option value="debug">🔧 Debug</option>
-            </select>
+              onChange={(value) => setMode(value as VisualizerType)}
+              options={[
+                { value: 'bars', label: 'Bars', icon: '📊' },
+                { value: 'wave', label: 'Wave', icon: '🌊' },
+                { value: 'circle', label: 'Circle', icon: '⭕' },
+                { value: 'debug', label: 'Debug', icon: '🔧' },
+              ]}
+              placeholder="Select visualizer"
+            />
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-300">Audio Source:</label>
-            <select
+            <SelectMenu
               value={source}
-              onChange={(e) => setSource(e.target.value as AudioSource)}
-              className="px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-            >
-              <option value="fake">🔊 Fake Engine</option>
-              <option value="mic">🎤 Microphone</option>
-            </select>
+              onChange={(value) => setSource(value as AudioSource)}
+              options={[
+                { value: 'fake', label: 'Demo Audio', icon: '🔊' },
+                { value: 'mic', label: 'Microphone', icon: '🎤' },
+              ]}
+              placeholder="Select audio source"
+            />
           </div>
         </div>
       </div>

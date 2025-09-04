@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-electron/
+packages/*/dist/
+.tmp/
+.git/
+.gitignore
+.prettierignore
+.prettierrc
+.eslintignore
+.eslintrc.js
+.vscode/

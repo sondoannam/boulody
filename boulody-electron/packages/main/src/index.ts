@@ -12,7 +12,7 @@ const setupPermissionHandler = () => {
     // Electron < 28 uses setPermissionRequestHandler; newer may use different signature but keep generic.
     if (ses && (ses as any).setPermissionRequestHandler) {
       (ses as any).setPermissionRequestHandler(
-        (wc: Electron.WebContents, permission: string, callback: (allow: boolean) => void) => {
+        (_wc: Electron.WebContents, permission: string, callback: (allow: boolean) => void) => {
           console.log('[main] permission request:', permission);
           if (permission === 'media' || permission === 'microphone' || permission === 'camera') {
             callback(true);

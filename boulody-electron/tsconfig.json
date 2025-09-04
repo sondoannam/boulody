@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/main" },
+    { "path": "./packages/renderer" }
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-electron",
+    "**/*.js",
+    "**/*.d.ts"
+  ]
+}
