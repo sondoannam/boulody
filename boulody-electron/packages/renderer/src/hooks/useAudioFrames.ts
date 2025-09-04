@@ -117,7 +117,7 @@ export function useAudioFrames(autoStart: boolean = true): UseAudioFramesResult 
       if (!active) return;
       const dt = ts - lastRafTime.current;
       lastRafTime.current = ts;
-      const current = frame; // most recent
+      const current = frameRef.current; // use ref, not state
       for (const cb of rafCallbacks.current) cb(current, dt);
       requestAnimationFrame(loop);
     }
@@ -126,7 +126,7 @@ export function useAudioFrames(autoStart: boolean = true): UseAudioFramesResult 
       active = false;
       cancelAnimationFrame(id);
     };
-  }, [frame]);
+  }, []); // no frame dependency to prevent rAF loop restarts
 
   const start = useCallback((config?: AudioEngineConfig) => apiRef.current?.start(config), []);
   const stop = useCallback(() => apiRef.current?.stop(), []);

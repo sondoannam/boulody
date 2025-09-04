@@ -1,0 +1,315 @@
+---
+alwaysApply: false
+---
+# Performance-Optimized Audio Visualizer Rules
+
+These rules ensure smooth 60fps performance with minimal GC pressure and efficient rendering for the Electron + React audio visualizer.
+
+## Core Principles
+
+### 1. Canvas-First Rendering
+- **ALWAYS** prefer Canvas/WebGL over DOM for per-frame visuals
+- If DOM is unavoidable, update via `transform` (scale/translate) using `requestAnimationFrame` and refs, not React state
+- Use `ResizeObserver` for responsive canvas sizing with proper device pixel ratio scaling
+
+### 2. Avoid React Re-render Loops
+- **NEVER** trigger React re-renders at frame rate (60fps)
+- Keep the latest audio frame in a ref; drive drawing via a stable rAF loop that reads the ref
+- Effects must not depend on high-frequency values - rAF loops and subscriptions should have empty dependency arrays `[]`
+- Use throttled state updates (max 1Hz) for UI counters and non-critical displays
+
+### 3. Memory and Allocation Optimization
+- Minimize allocations in hot loops:
+  - Reuse typed arrays; avoid per-frame `Array.from`, `slice`, or `map` unless payload requires cloning
+  - Precompute lookups (strides, angles) outside the draw loop
+  - Cache trigonometric calculations and gradients where possible
+- Use circular buffers for time-series data (spectrograms, history)
+- Pre-allocate buffers and reuse `ImageData` objects
+
+### 4. IPC and Data Flow Efficiency
+- Keep frame payloads small (limit bins to what is actually rendered)
+- Batch config/status/metrics updates; do not spam logs or metrics more than once per second
+- Use structured cloning efficiently - consider double-buffering for large payloads
+
+### 5. Layout Performance
+- Avoid layout thrash:
+  - Do not animate heights/widths per bar; use transforms or canvas
+  - Use `will-change` and layer promotion cautiously; prefer single canvas layer
+- Canvas context operations should be batched; reuse paths where possible
+
+### 6. Logging and Debugging
+- **NO** console logs in per-frame code paths unless behind a debug flag
+- Use performance marks and metrics collection at low frequency (≤1 Hz)
+
+## Implementation Patterns
+
+### Canvas Visualizer Template
+```tsx
+export const MyVisualizer: React.FC<Props> = ({ frame, width, height }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastFrame = useRef<FrameMessage | null>(null);
+  const animationId = useRef<number>();
+
+  // Update frame reference (not state)
+  useEffect(() => {
+    if (frame) lastFrame.current = frame;
+  }, [frame]);
+
+  // Draw function with stable dependencies
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const f = lastFrame.current;
+    // ... drawing logic using f, not frame state
+    
+    animationId.current = requestAnimationFrame(draw);
+  }, [/* stable deps only */]);
+
+  // Responsive canvas sizing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const { width: containerWidth } = entry.contentRect;
+        const actualWidth = width || containerWidth;
+        
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = actualWidth * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${actualWidth}px`;
+        canvas.style.height = `${height}px`;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.scale(dpr, dpr);
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, [width, height]);
+
+  // Start animation loop (empty deps)
+  useEffect(() => {
+    draw();
+    return () => {
+      if (animationId.current) {
+        cancelAnimationFrame(animationId.current);
+      }
+    };
+  }, [draw]);
+
+  return (
+    <div ref={containerRef} style={{ width: width || '100%', height }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+    </div>
+  );
+};
+```
+
+### Hook Optimization Pattern
+```tsx
+// rAF loop with empty dependency array
+useEffect(() => {
+  let active = true;
+  function loop(ts: number) {
+    if (!active) return;
+    const current = frameRef.current; // use ref, not state
+    // ... processing
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  return () => { active = false; };
+}, []); // EMPTY - no frame dependency
+```
+
+## Code Review Checklist
+
+Before merging visualizer code, verify:
+
+- [ ] Uses rAF with stable effect dependencies (empty array)
+- [ ] Reads data from refs, not React state, inside hot paths
+- [ ] No per-frame object/array allocations in draw loop
+- [ ] Canvas context operations are batched; paths reused where possible
+- [ ] Visual bin count aligned with actual render resolution
+- [ ] No console.log in draw loops unless behind debug flag
+- [ ] ResizeObserver handles responsive sizing correctly
+- [ ] Device pixel ratio scaling implemented for crisp rendering
+
+## Electron Main Process
+
+- Use adaptive timers for engine ticks to reduce drift
+- Keep heavy work off the UI thread
+- Periodic metrics emission (≤1 Hz) for monitoring without noise
+- Structured clone optimization for IPC payloads
+
+## Performance Monitoring
+
+Monitor these metrics during development:
+- Frame generation time (should be <16ms for 60fps)
+- Memory allocation rate (minimize per-frame allocations)
+- Canvas draw call frequency and duration
+- IPC message frequency and payload size
+- React re-render frequency (should be minimal)
+# Performance-Optimized Audio Visualizer Rules
+
+These rules ensure smooth 60fps performance with minimal GC pressure and efficient rendering for the Electron + React audio visualizer.
+
+## Core Principles
+
+### 1. Canvas-First Rendering
+- **ALWAYS** prefer Canvas/WebGL over DOM for per-frame visuals
+- If DOM is unavoidable, update via `transform` (scale/translate) using `requestAnimationFrame` and refs, not React state
+- Use `ResizeObserver` for responsive canvas sizing with proper device pixel ratio scaling
+
+### 2. Avoid React Re-render Loops
+- **NEVER** trigger React re-renders at frame rate (60fps)
+- Keep the latest audio frame in a ref; drive drawing via a stable rAF loop that reads the ref
+- Effects must not depend on high-frequency values - rAF loops and subscriptions should have empty dependency arrays `[]`
+- Use throttled state updates (max 1Hz) for UI counters and non-critical displays
+
+### 3. Memory and Allocation Optimization
+- Minimize allocations in hot loops:
+  - Reuse typed arrays; avoid per-frame `Array.from`, `slice`, or `map` unless payload requires cloning
+  - Precompute lookups (strides, angles) outside the draw loop
+  - Cache trigonometric calculations and gradients where possible
+- Use circular buffers for time-series data (spectrograms, history)
+- Pre-allocate buffers and reuse `ImageData` objects
+
+### 4. IPC and Data Flow Efficiency
+- Keep frame payloads small (limit bins to what is actually rendered)
+- Batch config/status/metrics updates; do not spam logs or metrics more than once per second
+- Use structured cloning efficiently - consider double-buffering for large payloads
+
+### 5. Layout Performance
+- Avoid layout thrash:
+  - Do not animate heights/widths per bar; use transforms or canvas
+  - Use `will-change` and layer promotion cautiously; prefer single canvas layer
+- Canvas context operations should be batched; reuse paths where possible
+
+### 6. Logging and Debugging
+- **NO** console logs in per-frame code paths unless behind a debug flag
+- Use performance marks and metrics collection at low frequency (≤1 Hz)
+
+## Implementation Patterns
+
+### Canvas Visualizer Template
+```tsx
+export const MyVisualizer: React.FC<Props> = ({ frame, width, height }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastFrame = useRef<FrameMessage | null>(null);
+  const animationId = useRef<number>();
+
+  // Update frame reference (not state)
+  useEffect(() => {
+    if (frame) lastFrame.current = frame;
+  }, [frame]);
+
+  // Draw function with stable dependencies
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const f = lastFrame.current;
+    // ... drawing logic using f, not frame state
+    
+    animationId.current = requestAnimationFrame(draw);
+  }, [/* stable deps only */]);
+
+  // Responsive canvas sizing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        const { width: containerWidth } = entry.contentRect;
+        const actualWidth = width || containerWidth;
+        
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = actualWidth * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${actualWidth}px`;
+        canvas.style.height = `${height}px`;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.scale(dpr, dpr);
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, [width, height]);
+
+  // Start animation loop (empty deps)
+  useEffect(() => {
+    draw();
+    return () => {
+      if (animationId.current) {
+        cancelAnimationFrame(animationId.current);
+      }
+    };
+  }, [draw]);
+
+  return (
+    <div ref={containerRef} style={{ width: width || '100%', height }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+    </div>
+  );
+};
+```
+
+### Hook Optimization Pattern
+```tsx
+// rAF loop with empty dependency array
+useEffect(() => {
+  let active = true;
+  function loop(ts: number) {
+    if (!active) return;
+    const current = frameRef.current; // use ref, not state
+    // ... processing
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  return () => { active = false; };
+}, []); // EMPTY - no frame dependency
+```
+
+## Code Review Checklist
+
+Before merging visualizer code, verify:
+
+- [ ] Uses rAF with stable effect dependencies (empty array)
+- [ ] Reads data from refs, not React state, inside hot paths
+- [ ] No per-frame object/array allocations in draw loop
+- [ ] Canvas context operations are batched; paths reused where possible
+- [ ] Visual bin count aligned with actual render resolution
+- [ ] No console.log in draw loops unless behind debug flag
+- [ ] ResizeObserver handles responsive sizing correctly
+- [ ] Device pixel ratio scaling implemented for crisp rendering
+
+## Electron Main Process
+
+- Use adaptive timers for engine ticks to reduce drift
+- Keep heavy work off the UI thread
+- Periodic metrics emission (≤1 Hz) for monitoring without noise
+- Structured clone optimization for IPC payloads
+
+## Performance Monitoring
+
+Monitor these metrics during development:
+- Frame generation time (should be <16ms for 60fps)
+- Memory allocation rate (minimize per-frame allocations)
+- Canvas draw call frequency and duration
+- IPC message frequency and payload size
+- React re-render frequency (should be minimal)

@@ -1,0 +1,29 @@
+---
+alwaysApply: false
+---
+name: Performance-first visualizer edits
+description: Optimize Electron + React visualizer for smooth 60fps with minimal GC and re-rendering.
+rules:
+  - Always prefer Canvas/WebGL over DOM for per-frame visuals. If DOM is unavoidable, update via transform (scale/translate) using requestAnimationFrame and refs, not React state.
+  - Never trigger React re-renders at frame rate. Keep the latest audio frame in a ref; drive drawing via a stable rAF loop that reads the ref.
+  - Effects must not depend on high-frequency values. rAF loops and subscriptions should have empty dependency arrays and read from refs.
+  - Minimize allocations in hot loops:
+      - Reuse typed arrays; avoid per-frame Array.from, slice, or map unless the payload requires cloning.
+      - Precompute lookups (e.g., strides, angles) outside the draw loop; cache trigs if needed.
+  - IPC efficiency:
+      - Keep frame payloads small (limit bins to what is rendered).
+      - Batch config/status/metrics updates; do not spam logs or metrics more than once per second.
+  - Avoid layout thrash:
+      - Do not animate heights/widths per bar; use transforms or canvas.
+      - Use will-change and layer promotion cautiously; prefer a single canvas layer.
+  - Guard logging:
+      - No console logs in per-frame code paths unless behind a debug flag.
+  - Code review checklist for new visuals:
+      - Uses rAF with stable effect deps.
+      - Reads data from refs, not React state, inside hot paths.
+      - No per-frame object/array allocations in draw loop.
+      - Canvas context operations batched; paths reused where possible.
+      - Visual bin count aligned with actual render resolution; avoid oversampling needlessly.
+  - Electron main:
+      - Use adaptive timers for engine ticks to reduce drift; keep heavy work off the UI thread.
+      - Consider periodic metrics emission (≤1 Hz) for monitoring without noise.
