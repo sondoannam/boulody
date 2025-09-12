@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import { GradientSuggestions } from './GradientSuggestions';
 import type { GradientConfig, GradientStop } from '../../types';
 
 interface GradientEditorProps {
@@ -238,6 +239,9 @@ export const GradientEditor: React.FC<GradientEditorProps> = ({ value, onChange 
           </div>
         </div>
       )}
+
+      {/* Gradient Suggestions */}
+      <GradientSuggestions onSelect={onChange} currentGradient={value} />
     </div>
   );
 };

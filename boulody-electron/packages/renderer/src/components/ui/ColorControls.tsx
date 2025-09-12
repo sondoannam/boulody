@@ -33,11 +33,8 @@ const ColorModeSelector: React.FC<ColorModeSelectorProps> = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Solid button clicked for:', label);
             onUpdate({ mode: 'solid' });
           }}
-          onMouseDown={() => console.log('Solid button mouse down')}
-          onMouseEnter={() => console.log('Solid button mouse enter')}
           className={`px-3 py-1 text-sm font-medium rounded transition-colors cursor-pointer relative z-10 ${
             config.mode === 'solid'
               ? 'bg-white text-gray-800 shadow-sm'
@@ -51,11 +48,8 @@ const ColorModeSelector: React.FC<ColorModeSelectorProps> = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Gradient button clicked for:', label);
             onUpdate({ mode: 'gradient' });
           }}
-          onMouseDown={() => console.log('Gradient button mouse down')}
-          onMouseEnter={() => console.log('Gradient button mouse enter')}
           className={`px-3 py-1 text-sm font-medium rounded transition-colors cursor-pointer relative z-10 ${
             config.mode === 'gradient'
               ? 'bg-white text-gray-800 shadow-sm'
@@ -70,17 +64,13 @@ const ColorModeSelector: React.FC<ColorModeSelectorProps> = ({
 
     {config.mode === 'solid' ? (
       <div className="space-y-3">
-        <div className="text-xs text-gray-500 mb-2">Debug: Mode is solid, label is "{label}"</div>
         <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Button clicked! Event:', e);
             const newValue = activeColorPicker === `${label}-solid` ? null : `${label}-solid`;
-            console.log('Color button clicked:', label, 'new value:', newValue);
             setActiveColorPicker(newValue);
           }}
-          onMouseDown={() => console.log('Mouse down on color button')}
           className="flex items-center gap-3 w-full p-3 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
         >
           <div
@@ -95,13 +85,9 @@ const ColorModeSelector: React.FC<ColorModeSelectorProps> = ({
 
         {activeColorPicker === `${label}-solid` && (
           <div className="mt-3 p-4 border border-gray-300 rounded-lg bg-white">
-            <div className="mb-2 text-sm text-gray-600">Color Picker Active: {activeColorPicker}</div>
             <HexColorPicker
               color={config.solidColor}
-              onChange={(color) => {
-                console.log('Color changed to:', color);
-                onUpdate({ solidColor: color });
-              }}
+              onChange={(color) => onUpdate({ solidColor: color })}
             />
             <div className="mt-2 text-xs text-gray-500">Current color: {config.solidColor}</div>
           </div>
@@ -120,18 +106,7 @@ export const ColorControls: React.FC<ColorControlsProps> = ({
 }) => {
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
 
-  // Debug: Log when activeColorPicker changes
-  React.useEffect(() => {
-    console.log('Active color picker:', activeColorPicker);
-  }, [activeColorPicker]);
-
-  // Debug: Log when component renders
-  React.useEffect(() => {
-    console.log('ColorControls rendered with colors:', colors);
-  }, [colors]);
-
   const updatePrimaryColor = (updates: Partial<ColorConfig>) => {
-    console.log('updatePrimaryColor called with:', updates);
     onChange({
       ...colors,
       primary: { ...colors.primary, ...updates },
@@ -149,9 +124,6 @@ export const ColorControls: React.FC<ColorControlsProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="text-xs text-gray-500 mb-2">
-        Debug: ColorControls active picker = "{activeColorPicker}"
-      </div>
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">Colors</h2>
         {showSecondary && (
